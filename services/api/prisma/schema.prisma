@@ -179,9 +179,9 @@ model Animal {
   tenantId   String
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lot        Lot?     @relation(fields: [lotId], references: [id])
-  sire       Animal?  @relation("AnimalPedigree", fields: [sireId], references: [id])
-  dam        Animal?  @relation("AnimalPedigree", fields: [damId], references: [id])
-  offspring  Animal[] @relation("AnimalPedigree")
+  sire       Animal?  @relation("AnimalSire", fields: [sireId], references: [id])
+  dam        Animal?  @relation("AnimalDam", fields: [damId], references: [id])
+  offspring  Animal[] @relation("AnimalOffspring")
   weightLogs WeightLog[]
   activities AnimalActivity[]
   createdAt  DateTime @default(now())
