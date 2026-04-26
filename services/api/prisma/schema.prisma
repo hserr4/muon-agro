@@ -172,7 +172,6 @@ model Animal {
   breed      String?
   color      String?
   sireId     String?
-  sireId     String?
   damId      String?
   lotId      String?
   observations String?
