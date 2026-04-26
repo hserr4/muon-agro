@@ -1,0 +1,448 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// === ENUMS ===
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum FlowType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  PURCHASE
+  SALE
+  TRANSFER
+  ADJUSTMENT
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  SUSPENDED
+  TRIALING
+}
+
+enum PlanTier {
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ActivityType {
+  FEEDING
+  MEDICATION
+  VACCINATION
+  WEIGHING
+  MOVEMENT
+  OTHER
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+enum NotificationLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// === TENANT & AUTH ===
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  subdomain  String   @unique
+  plan        PlanTier @default(BASIC)
+  status     SubscriptionStatus @default(TRIALING)
+  trialEndsAt DateTime?
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  users      User[]
+  animals    Animal[]
+  lots       Lot[]
+  fields     Field[]
+  stockItems StockItem[]
+  employees  Employee[]
+  machines   Machine[]
+  cashFlows  CashFlow[]
+  harvests  Harvest[]
+  plantations Plantation[]
+  notifications Notification[]
+  subscriptions Subscription[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String
+  password  String
+  name      String
+  role      UserRole @default(OPERATOR)
+  phone     String?
+  avatar    String?
+  isActive  Boolean  @default(true)
+  lastLoginAt DateTime?
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, tenantId])
+}
+
+// === SUBSCRIPTION BILLING ===
+
+model Subscription {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan            PlanTier
+  status          SubscriptionStatus
+  stripePriceId   String?
+  stripeProductId String?
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId])
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  tenantId        String
+  subscriptionId String?
+  stripeInvoiceId String?
+  amount         Float
+  currency       String   @default("BRL")
+  status         String
+  description    String?
+  paidAt         DateTime?
+  dueDate        DateTime
+  createdAt      DateTime @default(now())
+}
+
+// === LIVESTOCK (PECUÁRIA) ===
+
+model Animal {
+  id           String   @id @default(uuid())
+  tagNumber   String
+  qrCode      String?
+  nickname   String?
+  birthDate  DateTime
+  gender     Gender
+  breed      String?
+  color      String?
+  sireId     String?
+  damId      String?
+  lotId      String?
+  observations String?
+  isActive   Boolean  @default(true)
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lot        Lot?     @relation(fields: [lotId], references: [id])
+  sire       Animal?  @relation("AnimalPedigree", fields: [sireId], references: [id])
+  dam        Animal?  @relation("AnimalPedigree", fields: [damId], references: [id])
+  offspring  Animal[] @relation("AnimalPedigree")
+  weightLogs WeightLog[]
+  activities AnimalActivity[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tagNumber, tenantId])
+}
+
+model Lot {
+  id           String   @id @default(uuid())
+  name         String
+  description String?
+  maxCapacity Int      @default(100)
+  entryDate   DateTime @default(now())
+  targetWeight Float?
+  isActive    Boolean  @default(true)
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  animals    Animal[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, tenantId])
+}
+
+model WeightLog {
+  id          String   @id @default(uuid())
+  animalId   String
+  animal     Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  weightKg  Float
+  observations String?
+  measuredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([animalId])
+}
+
+model AnimalActivity {
+  id          String   @id @default(uuid())
+  animalId   String
+  animal     Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  type       ActivityType
+  description String?
+  performedBy String?
+  performedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([animalId])
+}
+
+// === AGRICULTURE (AGRICULTURA) ===
+
+model Field {
+  id          String   @id @default(uuid())
+  name       String
+  areaHa     Float
+  soilType   String?
+  location   String?
+  isActive   Boolean  @default(true)
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plantations Plantation[]
+  harvests  Harvest[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, tenantId])
+}
+
+model Plantation {
+  id          String   @id @default(uuid())
+  fieldId     String
+  field       Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  cropName   String
+  variety    String?
+  plantedAt  DateTime
+  expectedHarvestDate DateTime?
+  areaPlanted Float?
+  inputsUsed Json?
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  harvests  Harvest[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([fieldId])
+}
+
+model Harvest {
+  id           String   @id @default(uuid())
+  fieldId      String
+  field        Field   @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  plantationId String
+  plantation   Plantation @relation(fields: [plantationId], references: [id], onDelete: Cascade)
+  quantityKg  Float
+  quality     String?
+  pricePerKg   Float?
+  harvestedAt DateTime @default(now())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([fieldId])
+  @@index([plantationId])
+}
+
+// === STOCK (ESTOQUE) ===
+
+model StockItem {
+  id          String   @id @default(uuid())
+  name        String
+  sku         String?
+  category    String?
+  unit        String
+  quantity   Int      @default(0)
+  minQuantity Int      @default(0)
+  costPerUnit Float?
+  location    String?
+  isActive    Boolean  @default(true)
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([sku, tenantId])
+}
+
+model StockMovement {
+  id          String   @id @default(uuid())
+  itemId      String
+  item        StockItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  quantity   Int
+  unitCost    Float?
+  description String?
+  performedBy String?
+  performedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([itemId])
+}
+
+// === RH ===
+
+model Employee {
+  id          String   @id @default(uuid())
+  name        String
+  cpf         String?
+  role        String
+  phone      String?
+  email      String?
+  salary     Float?
+  hireDate   DateTime @default(now())
+  isActive   Boolean  @default(true)
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([cpf, tenantId])
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title      String
+  description String?
+  status    TaskStatus @default(PENDING)
+  dueDate   DateTime?
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+// === MAINTENANCE (MANUTENÇÃO) ===
+
+model Machine {
+  id          String   @id @default(uuid())
+  name        String
+  brand      String?
+  model      String?
+  serial     String?
+  purchaseDate DateTime?
+  isActive   Boolean  @default(true)
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  maintenanceRecords MaintenanceRecord[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([serial, tenantId])
+}
+
+model MaintenanceRecord {
+  id          String   @id @default(uuid())
+  machineId  String
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  type      MaintenanceType
+  description String?
+  cost       Float?
+  performedBy String?
+  performedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([machineId])
+}
+
+// === FINANCE (FINANCEIRO) ===
+
+model CashFlow {
+  id          String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type       FlowType
+  amount     Float
+  category   String?
+  description String?
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([date])
+}
+
+// === NOTIFICATIONS ===
+
+model Notification {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  level      NotificationLevel @default(LOW)
+  title      String
+  message    String
+  read       Boolean  @default(false)
+  readAt     DateTime?
+  actionUrl  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, read])
+}
+
+// === AUDIT ===
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String
+  userId     String?
+  action     String
+  entity     String
+  entityId   String
+  changes    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
