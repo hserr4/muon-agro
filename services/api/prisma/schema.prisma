@@ -172,6 +172,7 @@ model Animal {
   breed      String?
   color      String?
   sireId     String?
+  sireId     String?
   damId      String?
   lotId      String?
   observations String?
@@ -181,7 +182,8 @@ model Animal {
   lot        Lot?     @relation(fields: [lotId], references: [id])
   sire       Animal?  @relation("AnimalSire", fields: [sireId], references: [id])
   dam        Animal?  @relation("AnimalDam", fields: [damId], references: [id])
-  offspring  Animal[] @relation("AnimalOffspring")
+  sireOf    Animal[] @relation("AnimalSire")
+  damOf     Animal[] @relation("AnimalDam")
   weightLogs WeightLog[]
   activities AnimalActivity[]
   createdAt  DateTime @default(now())
