@@ -167,7 +167,7 @@ model Animal {
   tagNumber   String
   qrCode      String?
   nickname   String?
-  birthDate  DateTime
+birthDate  DateTime
   gender     Gender
   breed      String?
   color      String?
