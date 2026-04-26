@@ -1,10 +1,10 @@
 'use client';
 
-import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
-import theme from '../theme/theme';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
+
+import { ThemeProvider } from '../theme/theme-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -17,11 +17,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }));
 
   return (
-    <MUIThemeProvider theme={theme}>
-      <CssBaseline />
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </MUIThemeProvider>
+    <AppRouterCacheProvider options={{ key: 'mui' }}>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </ThemeProvider>
+    </AppRouterCacheProvider>
   );
 }
