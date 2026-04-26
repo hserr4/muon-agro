@@ -5,11 +5,11 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-COPY package.json pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY services/api/package.json ./services/api/
 COPY apps/web/package.json ./apps/web/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY services/api/prisma ./services/api/prisma/
 RUN cd services/api && pnpm prisma generate
@@ -29,7 +29,7 @@ COPY package.json pnpm-workspace.yaml turbo.json ./
 COPY services/api/package.json ./services/api/
 COPY apps/web/package.json ./apps/web/
 
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --no-frozen-lockfile
 
 COPY --from=api-builder /app/services/api/dist ./services/api/dist
 COPY --from=api-builder /app/services/api/node_modules/.prisma ./services/api/node_modules/.prisma
