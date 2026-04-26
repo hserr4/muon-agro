@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { NotificationType, NotificationLevel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -18,8 +19,8 @@ export class NotificationsService {
 
   async create(data: {
     tenantId: string;
-    type: string;
-    level?: string;
+    type: NotificationType;
+    level?: NotificationLevel;
     title: string;
     message: string;
     actionUrl?: string;

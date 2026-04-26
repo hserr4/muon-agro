@@ -16,7 +16,7 @@ export class FieldsService {
     return this.prisma.field.findMany({
       where: { tenantId },
       include: {
-        plantations: { where: { plantedAt: { not: null } } },
+        plantations: true,
       },
     });
   }

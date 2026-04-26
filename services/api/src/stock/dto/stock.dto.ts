@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class CreateStockItemDto {
@@ -68,14 +68,16 @@ class UpdateStockItemDto {
   isActive?: boolean;
 }
 
+import { TransactionType } from '@prisma/client';
+
 class CreateStockMovementDto {
   @ApiProperty()
   @IsString()
   itemId: string;
 
-  @ApiProperty({ enum: ['PURCHASE', 'SALE', 'TRANSFER', 'ADJUSTMENT'] })
-  @IsString()
-  type: string;
+  @ApiProperty({ enum: TransactionType })
+  @IsEnum(TransactionType)
+  type: TransactionType;
 
   @ApiProperty({ example: 10 })
   @IsNumber()

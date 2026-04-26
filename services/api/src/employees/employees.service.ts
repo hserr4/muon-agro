@@ -26,7 +26,7 @@ export class EmployeesService {
   }
 
   async createTask(dto: CreateTaskDto, tenantId: string) {
-    return this.prisma.task.create({ data: { ...dto, tenantId } });
+    return this.prisma.task.create({ data: { ...dto } });
   }
 
   async getTasks(employeeId: string, tenantId: string) {

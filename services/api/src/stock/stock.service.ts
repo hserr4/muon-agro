@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransactionType } from '@prisma/client';
 import { CreateStockItemDto, UpdateStockItemDto, CreateStockMovementDto } from './dto/stock.dto';
 
 @Injectable()
@@ -31,13 +32,13 @@ export class StockService {
   async createMovement(dto: CreateStockMovementDto, tenantId: string) {
     const item = await this.findItem(dto.itemId, tenantId);
     const newQuantity = 
-      dto.type === 'PURCHASE' || dto.type === 'TRANSFER_IN' 
+      dto.type === TransactionType.PURCHASE || dto.type === TransactionType.TRANSFER 
         ? item.quantity + dto.quantity 
         : item.quantity - dto.quantity;
 
     const [movement] = await this.prisma.$transaction([
       this.prisma.stockMovement.create({
-        data: { ...dto, tenantId },
+        data: { ...dto },
       }),
       this.prisma.stockItem.update({
         where: { id: dto.itemId },

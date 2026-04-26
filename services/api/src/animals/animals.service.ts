@@ -46,7 +46,8 @@ export class AnimalsService {
         },
         sire: true,
         dam: true,
-        offspring: true,
+        sireOf: true,
+        damOf: true,
       },
     });
 

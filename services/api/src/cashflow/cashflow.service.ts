@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { FlowType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -9,7 +10,7 @@ export class CashFlowService {
     return this.prisma.cashFlow.create({ data: { ...dto, tenantId } });
   }
 
-  async findAll(tenantId: string, filters?: { type?: string; startDate?: Date; endDate?: Date }) {
+  async findAll(tenantId: string, filters?: { type?: FlowType; startDate?: Date; endDate?: Date }) {
     return this.prisma.cashFlow.findMany({
       where: { tenantId, ...filters },
       orderBy: { date: 'desc' },

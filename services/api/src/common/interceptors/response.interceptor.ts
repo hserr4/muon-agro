@@ -1,6 +1,7 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 export interface Response<T> {
   success: boolean;
@@ -26,13 +27,13 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
 export class ErrorInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
-      map({
-        error: (err: any) => ({
+      catchError((err: any) => {
+        return throwError(() => ({
           success: false,
           message: err.message || 'Internal server error',
           statusCode: err.statusCode || 500,
           timestamp: new Date().toISOString(),
-        }),
+        }));
       })
     );
   }

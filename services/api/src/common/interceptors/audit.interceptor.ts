@@ -1,7 +1,7 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
@@ -43,6 +43,7 @@ export class AuditInterceptor implements NestInterceptor {
                 userId: user?.id,
                 action: `${method} ${url}`,
                 entity: request.route?.path || url.split('?')[0],
+                entityId: 'ERROR',
                 changes: { error: err.message, status: 'error' },
                 ipAddress: ip,
               },
